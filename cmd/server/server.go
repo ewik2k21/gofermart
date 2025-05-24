@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gofermart/internals/interfaces"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,16 +13,16 @@ import (
 	"time"
 )
 
-type ginServer struct {
+type GinServer struct {
 	engine   *gin.Engine
 	server   *http.Server
 	startErr chan error
 }
 
-func NewGinServer(ctx context.Context, httpAddress string) (*ginServer, error) {
+func NewGinServer(ctx context.Context, httpAddress string) (*GinServer, error) {
 	engine := gin.Default()
 	//engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	gs := &ginServer{
+	gs := &GinServer{
 		engine:   engine,
 		server:   &http.Server{Addr: httpAddress, Handler: engine},
 		startErr: make(chan error, 1),
@@ -38,7 +39,7 @@ func NewGinServer(ctx context.Context, httpAddress string) (*ginServer, error) {
 	return gs, nil
 
 }
-func (gs *ginServer) Start(ctx context.Context) error {
+func (gs *GinServer) Start(ctx context.Context) error {
 	if gs.server == nil {
 		return errors.New("server is nil")
 	}
@@ -61,7 +62,7 @@ func (gs *ginServer) Start(ctx context.Context) error {
 
 }
 
-func (gs *ginServer) ShutDown(ctx context.Context) error {
+func (gs *GinServer) ShutDown(ctx context.Context) error {
 	ctxShutDown, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -72,4 +73,26 @@ func (gs *ginServer) ShutDown(ctx context.Context) error {
 
 	logrus.Info("Server stopped")
 	return nil
+}
+
+func (gs *GinServer) RegisterGroupRoute(path string, routes []interfaces.RouteDefinition, middleWare ...gin.HandlerFunc) {
+	group := gs.engine.Group(path)
+	group.Use(middleWare...)
+	for _, route := range routes {
+		switch route.Method {
+		case "GET":
+			group.GET(route.Path, route.Handler)
+		case "POST":
+			group.POST(route.Path, route.Handler)
+		case "PUT":
+			group.PUT(route.Path, route.Handler)
+		case "DELETE":
+			group.DELETE(route.Path, route.Handler)
+		case "PATCH":
+			group.PATCH(route.Path, route.Handler)
+
+		default:
+			logrus.Errorf("Invalid https method")
+		}
+	}
 }
