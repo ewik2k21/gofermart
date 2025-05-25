@@ -8,10 +8,11 @@ import (
 	"gofermart/internals/interfaces"
 )
 
-func RegisterUserRoutes(server *server.GinServer, userHandler *handlers.UserHandler) {
+func RegisterUserRoutes(server server.IGinServer, userHandler *handlers.UserHandler) {
 	server.RegisterGroupRoute("api/v1/", []interfaces.RouteDefinition{
-		{Method: "POST", Path: "user/register", Handler: userHandler.Register},
+		{Method: "POST", Path: "/user/register", Handler: userHandler.Register},
 	}, func(ctx *gin.Context) {
 		logrus.Info("Request on %s", ctx.Request.URL.Path)
 	})
+
 }

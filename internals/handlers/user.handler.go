@@ -10,12 +10,12 @@ import (
 )
 
 type UserHandler struct {
-	userService  services.UserService
-	tokenService services.TokenService
+	userService  services.IUserService
+	tokenService services.ITokenService
 	validate     *validator.Validate
 }
 
-func NewUserHandler(userService services.UserService, tokenService services.TokenService) *UserHandler {
+func NewUserHandler(userService services.IUserService, tokenService services.ITokenService) *UserHandler {
 	return &UserHandler{userService: userService, tokenService: tokenService, validate: validator.New()}
 }
 

@@ -13,20 +13,30 @@ import (
 	"time"
 )
 
-type GinServer struct {
+type IGinServer interface {
+	Start(ctx context.Context) error
+	ShutDown(ctx context.Context) error
+	RegisterGroupRoute(path string, routes []interfaces.RouteDefinition, middleWare ...gin.HandlerFunc)
+	RegisterRoute(method, path string, handler gin.HandlerFunc)
+}
+
+type ginServer struct {
 	engine   *gin.Engine
 	server   *http.Server
 	startErr chan error
 }
 
-func NewGinServer(ctx context.Context, httpAddress string) (*GinServer, error) {
+func NewGinServer(ctx context.Context, httpAddress string) (IGinServer, error) {
 	engine := gin.Default()
 	//engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	gs := &GinServer{
+	gs := &ginServer{
 		engine:   engine,
 		server:   &http.Server{Addr: httpAddress, Handler: engine},
 		startErr: make(chan error, 1),
 	}
+	engine.GET("/api/v1", func(c *gin.Context) {
+		c.JSON(200, "U HERE")
+	})
 
 	go func() {
 		logrus.Infof("start http server at %s", httpAddress)
@@ -39,7 +49,8 @@ func NewGinServer(ctx context.Context, httpAddress string) (*GinServer, error) {
 	return gs, nil
 
 }
-func (gs *GinServer) Start(ctx context.Context) error {
+
+func (gs *ginServer) Start(ctx context.Context) error {
 	if gs.server == nil {
 		return errors.New("server is nil")
 	}
@@ -62,7 +73,7 @@ func (gs *GinServer) Start(ctx context.Context) error {
 
 }
 
-func (gs *GinServer) ShutDown(ctx context.Context) error {
+func (gs *ginServer) ShutDown(ctx context.Context) error {
 	ctxShutDown, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -74,8 +85,25 @@ func (gs *GinServer) ShutDown(ctx context.Context) error {
 	logrus.Info("Server stopped")
 	return nil
 }
+func (gs *ginServer) RegisterRoute(method, path string, handler gin.HandlerFunc) {
+	switch method {
+	case "GET":
+		gs.engine.GET(path, handler)
+	case "POST":
+		gs.engine.POST(path, handler)
+	case "PUT":
+		gs.engine.PUT(path, handler)
+	case "DELETE":
+		gs.engine.DELETE(path, handler)
+	case "PATCH":
+		gs.engine.PATCH(path, handler)
 
-func (gs *GinServer) RegisterGroupRoute(path string, routes []interfaces.RouteDefinition, middleWare ...gin.HandlerFunc) {
+	default:
+		logrus.Errorf("Invalid https method")
+	}
+
+}
+func (gs *ginServer) RegisterGroupRoute(path string, routes []interfaces.RouteDefinition, middleWare ...gin.HandlerFunc) {
 	group := gs.engine.Group(path)
 	group.Use(middleWare...)
 	for _, route := range routes {

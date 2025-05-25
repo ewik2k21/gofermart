@@ -23,12 +23,12 @@ func Execute() {
 		logrus.Fatalf("Failed to setup database: %v", err)
 	}
 
+	provider.NewProvider(db, ginServer)
+
 	err = ginServer.Start(ctx)
 	if err != nil {
 		logrus.Fatalf("Failed to start gin server: %v", err)
 		return
 	}
-
-	provider.NewProvider(db, ginServer)
 
 }

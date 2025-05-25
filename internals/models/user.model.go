@@ -11,6 +11,7 @@ type User struct {
 }
 
 type Balance struct {
-	Current  float64 `db:"current"`
-	Withdraw float64 `db:"withdraw" default:"0.00"`
+	UserId   uuid.UUID `db:"id"`
+	Current  float64   `db:"current"`
+	Withdraw float64   `db:"withdraw" default:"0.00"`
 }

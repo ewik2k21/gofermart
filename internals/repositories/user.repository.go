@@ -1,8 +1,8 @@
 package repositories
 
 import (
+	"database/sql"
 	"github.com/gofrs/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"gofermart/internals/interfaces"
 	"gofermart/internals/utils"
@@ -10,13 +10,14 @@ import (
 )
 
 type IUserRepository interface {
+	CreateUserAccount(request *interfaces.UserRequest, ctx context.Context) (string, error)
 }
 
 type UserRepository struct {
-	db *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+func NewUserRepository(db *sql.DB) IUserRepository {
 	return &UserRepository{db: db}
 }
 
@@ -29,9 +30,9 @@ func (r *UserRepository) CreateUserAccount(request *interfaces.UserRequest, ctx 
 	salt := id.String()[:9]
 	passwordHash := utils.GeneratePasswordHash(request.Password, salt)
 
-	sqlQuery := `INSERT INTO users(id,login, password_hash)VALUES ($1,$2,$3)`
+	sqlQuery := `INSERT INTO users(id,login, password_hash)VALUES ($1,$2,$3) RETURNING id`
 
-	err = r.db.QueryRow(ctx, sqlQuery, id, request.Login, passwordHash).Scan(&id)
+	err = r.db.QueryRow(sqlQuery, id, request.Login, passwordHash).Scan(&id)
 	if err != nil {
 		logrus.Errorf("failed create user : %v", err)
 	}

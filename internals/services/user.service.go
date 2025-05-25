@@ -7,13 +7,14 @@ import (
 )
 
 type IUserService interface {
+	CreateUserAccount(userRequest *interfaces.UserRequest, ctx context.Context) (string, error)
 }
 
 type UserService struct {
-	userRepo repositories.UserRepository
+	userRepo repositories.IUserRepository
 }
 
-func NewUserService(userRepo repositories.UserRepository) *UserService {
+func NewUserService(userRepo repositories.IUserRepository) IUserService {
 	return &UserService{
 		userRepo: userRepo,
 	}

@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 	"gofermart/cmd/server"
 	"gofermart/internals/handlers"
 	"gofermart/internals/repositories"
@@ -9,12 +9,12 @@ import (
 	"gofermart/internals/services"
 )
 
-func NewProvider(pool *pgxpool.Pool, server *server.GinServer) {
+func NewProvider(db *sql.DB, server server.IGinServer) {
 	// repo db
 	// routes server
-	userRepo := repositories.NewUserRepository(pool)
-	userService := services.NewUserService(*userRepo)
+	userRepo := repositories.NewUserRepository(db)
+	userService := services.NewUserService(userRepo)
 	tokenService := services.NewTokenService()
-	userHandler := handlers.NewUserHandler(*userService, *tokenService)
+	userHandler := handlers.NewUserHandler(userService, tokenService)
 	routes.RegisterUserRoutes(server, userHandler)
 }

@@ -2,8 +2,10 @@ package config
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -14,19 +16,21 @@ func LoadEnv() {
 	}
 }
 
-func SetUpDatabase(ctx context.Context) (*pgxpool.Pool, error) {
+func SetUpDatabase(ctx context.Context) (*sql.DB, error) {
 	dsn := os.Getenv(DataBaseUrl)
-	dbPool, err := pgxpool.New(ctx, dsn)
-
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logrus.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer dbPool.Close()
 
-	err = dbPool.Ping(ctx)
+	if err := goose.Up(db, "migrations"); err != nil {
+		logrus.Fatalf("Failed migrations for init db : %v", err)
+	}
+
+	err = db.Ping()
 	if err != nil {
 		logrus.Fatalf("Failed to ping db: %v", err)
 	}
 
-	return dbPool, nil
+	return db, nil
 }
