@@ -58,11 +58,21 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.Header("Authorization", "Bearer"+*tokenString)
+	c.Header("Authorization", "Bearer "+*tokenString)
 	c.Header("Token-Expiration", expirationTime.Format(time.RFC3339))
 
 	c.JSON(http.StatusOK, interfaces.Response{
 		Message: "User create successfully and logged in",
 		Code:    http.StatusOK,
 	})
+}
+
+func (h *UserHandler) GetId(c *gin.Context) {
+	userId, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(400, "FAILED ID ")
+		return
+	}
+	userIdString, _ := userId.(string)
+	c.JSON(200, "user id : "+userIdString)
 }

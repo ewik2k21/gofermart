@@ -34,9 +34,6 @@ func NewGinServer(ctx context.Context, httpAddress string) (IGinServer, error) {
 		server:   &http.Server{Addr: httpAddress, Handler: engine},
 		startErr: make(chan error, 1),
 	}
-	engine.GET("/api/v1", func(c *gin.Context) {
-		c.JSON(200, "U HERE")
-	})
 
 	go func() {
 		logrus.Infof("start http server at %s", httpAddress)

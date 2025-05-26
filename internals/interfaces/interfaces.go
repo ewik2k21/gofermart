@@ -17,6 +17,6 @@ type RouteDefinition struct {
 }
 
 type Claims struct {
-	UserId string
+	UserId string `json:"user_id"`
 	jwt.StandardClaims
 }
