@@ -67,12 +67,68 @@ func (h *UserHandler) Register(c *gin.Context) {
 	})
 }
 
-func (h *UserHandler) GetId(c *gin.Context) {
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(400, "FAILED ID ")
+func (h *UserHandler) Login(c *gin.Context) {
+	var userRequest interfaces.UserRequest
+
+	if err := c.ShouldBindJSON(&userRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		})
 		return
 	}
-	userIdString, _ := userId.(string)
-	c.JSON(200, "user id : "+userIdString)
+
+	if err := h.validate.Struct(userRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+
+		return
+	}
+
+	userId, passwordOk, err := h.userService.CheckCredentials(&userRequest)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Login or password incorrect",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	if !passwordOk {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Login or password incorrect",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	tokenString, expirationTime, err := h.tokenService.GenerateJwtToken(userId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.Header("Authorization", "Bearer "+*tokenString)
+	c.Header("Token-Expiration", expirationTime.Format(time.RFC3339))
+
+	c.JSON(http.StatusOK, interfaces.Response{
+		Message: "User successfully logged in",
+		Code:    http.StatusOK,
+	})
+
 }
+
+//func (h *UserHandler) GetId(c *gin.Context) {
+//	userId, exists := c.Get("user_id")
+//	if !exists {
+//		c.JSON(400, "FAILED ID ")
+//		return
+//	}
+//	userIdString, _ := userId.(string)
+//	c.JSON(200, "user id : "+userIdString)
+//}

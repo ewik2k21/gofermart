@@ -29,8 +29,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//CLAIMS TODO
-
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})

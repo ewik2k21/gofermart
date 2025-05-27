@@ -16,3 +16,8 @@ type UserData struct {
 	Balance models.Balance `json:"balance"`
 	Orders  []models.Order `json:"orders"`
 }
+
+type UserLoginData struct {
+	UserId       uuid.UUID
+	PasswordHash string
+}

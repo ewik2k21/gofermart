@@ -6,8 +6,8 @@ type User struct {
 	ID           uuid.UUID `db:"id"`
 	Login        string    `db:"login"`
 	PasswordHash string    `db:"password_hash"`
-	Balance      Balance   `db:"balance"`
-	Orders       []Order   `db:"orders"`
+	Balance      Balance
+	Orders       []Order
 }
 
 type Balance struct {
