@@ -15,7 +15,7 @@ CREATE TABLE balances (
 CREATE TABLE orders (
     id uuid PRIMARY KEY ,
     user_id uuid NOT NULL REFERENCES users(id),
-    order_number TEXT NOT NULL,
+    order_number TEXT NOT NULL ,
     status VARCHAR(255) NOT NULL
 );
 -- +goose StatementEnd

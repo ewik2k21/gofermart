@@ -5,6 +5,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"gofermart/internals/interfaces"
 	"gofermart/internals/services"
+	"gofermart/internals/utils"
 	"net/http"
 	"time"
 )
@@ -121,6 +122,53 @@ func (h *UserHandler) Login(c *gin.Context) {
 		Code:    http.StatusOK,
 	})
 
+}
+
+func (h *UserHandler) AddOrder(c *gin.Context) {
+	var orderRequest interfaces.OrderRequest
+
+	if err := c.ShouldBindJSON(&orderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	if err := h.validate.Struct(orderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+		return
+	}
+	if ok := utils.ValidateOrderNumber(orderRequest.OrderNumber); !ok {
+		c.JSON(http.StatusUnprocessableEntity, interfaces.Response{
+			Code:    http.StatusUnprocessableEntity,
+			Message: "Incorrect order number format ",
+		})
+		return
+	}
+	userId, ok := utils.GetId(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Wrong user id",
+			Code:    http.StatusUnauthorized,
+		})
+	}
+	statusCode, message, err := h.userService.AddOrder(userId, orderRequest.OrderNumber)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(statusCode, interfaces.Response{
+		Message: message,
+		Code:    statusCode,
+	})
 }
 
 //func (h *UserHandler) GetId(c *gin.Context) {

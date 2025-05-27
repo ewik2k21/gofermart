@@ -12,6 +12,7 @@ import (
 type IUserService interface {
 	CreateUserAccount(userRequest *interfaces.UserRequest, ctx context.Context) (string, error)
 	CheckCredentials(userRequest *interfaces.UserRequest) (string, bool, error)
+	AddOrder(userId, orderNumber string) (int, string, error)
 }
 
 type UserService struct {
@@ -52,4 +53,19 @@ func (s *UserService) CheckCredentials(userRequest *interfaces.UserRequest) (str
 	ok := utils.DoPasswordMatch(userLoginData.PasswordHash, userRequest.Password, salt)
 
 	return userLoginData.UserId.String(), ok, nil
+}
+
+func (s *UserService) AddOrder(userId, orderNumber string) (int, string, error) {
+	userIdFromOrder, err := s.userRepo.AddOrder(userId, orderNumber)
+	if userIdFromOrder == "" && err == nil {
+		return 202, "New order number accepted for processing", nil
+	}
+	if err != nil {
+		return 500, "Failed add order", err
+	}
+	if userIdFromOrder == userId {
+		return 200, "Order number has already been uploaded by this user", nil
+	}
+	return 409, "Order number has already been uploaded by another user", nil
+
 }

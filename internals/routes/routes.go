@@ -6,6 +6,7 @@ import (
 	"gofermart/cmd/server"
 	"gofermart/internals/handlers"
 	"gofermart/internals/interfaces"
+	"gofermart/middleware"
 )
 
 func RegisterUserRoutes(server server.IGinServer, userHandler *handlers.UserHandler) {
@@ -16,8 +17,10 @@ func RegisterUserRoutes(server server.IGinServer, userHandler *handlers.UserHand
 		logrus.Infof("Request on %s", ctx.Request.URL.Path)
 	})
 
-	//server.RegisterGroupRoute("api/v1", []interfaces.RouteDefinition{
-	//	{Method: "GET", Path: "/user/get_id", Handler: userHandler.GetId},
-	//}, middleware.AuthMiddleware())
+	server.RegisterGroupRoute("api/v1", []interfaces.RouteDefinition{
+		{Method: "POST", Path: "/user/orders", Handler: userHandler.AddOrder},
+	}, func(ctx *gin.Context) {
+		logrus.Infof("Request on %s", ctx.Request.URL.Path)
+	}, middleware.AuthMiddleware())
 
 }

@@ -21,3 +21,7 @@ type UserLoginData struct {
 	UserId       uuid.UUID
 	PasswordHash string
 }
+
+type OrderRequest struct {
+	OrderNumber string `json:"order_number" validate:"required"`
+}
