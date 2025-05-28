@@ -3,6 +3,7 @@ package interfaces
 import (
 	"github.com/gofrs/uuid"
 	"gofermart/internals/models"
+	"time"
 )
 
 type UserRequest struct {
@@ -24,4 +25,11 @@ type UserLoginData struct {
 
 type OrderRequest struct {
 	OrderNumber string `json:"order_number" validate:"required"`
+}
+
+type OrderResponse struct {
+	OrderNumber string             `json:"number,omitempty"`
+	Status      models.OrderStatus `json:"status,omitempty"`
+	Accrual     int                `json:"accrual,omitempty"`
+	UpdatedAt   time.Time          `json:"updated_at,omitempty"`
 }

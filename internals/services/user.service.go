@@ -13,6 +13,7 @@ type IUserService interface {
 	CreateUserAccount(userRequest *interfaces.UserRequest, ctx context.Context) (string, error)
 	CheckCredentials(userRequest *interfaces.UserRequest) (string, bool, error)
 	AddOrder(userId, orderNumber string) (int, string, error)
+	GetAllOrders(userId string) (*[]interfaces.OrderResponse, error)
 }
 
 type UserService struct {
@@ -68,4 +69,23 @@ func (s *UserService) AddOrder(userId, orderNumber string) (int, string, error) 
 	}
 	return 409, "Order number has already been uploaded by another user", nil
 
+}
+
+func (s *UserService) GetAllOrders(userId string) (*[]interfaces.OrderResponse, error) {
+	orders, err := s.userRepo.GetAllOrders(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	var ordersResp []interfaces.OrderResponse
+
+	for _, order := range *orders {
+		ordersResp = append(ordersResp, interfaces.OrderResponse{
+			OrderNumber: order.OrderNumber,
+			Status:      order.Status,
+			Accrual:     order.Accrual,
+			UpdatedAt:   order.UpdateAt,
+		})
+	}
+	return &ordersResp, nil
 }

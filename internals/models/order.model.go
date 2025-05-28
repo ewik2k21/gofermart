@@ -1,6 +1,9 @@
 package models
 
-import "github.com/gofrs/uuid"
+import (
+	"github.com/gofrs/uuid"
+	"time"
+)
 
 type OrderStatus string
 
@@ -14,6 +17,8 @@ const (
 type Order struct {
 	ID          uuid.UUID   `db:"id"`
 	UserID      uuid.UUID   `db:"user_id"`
-	OrderNumber int         `db:"order_number"`
+	OrderNumber string      `db:"order_number"`
 	Status      OrderStatus `db:"status"`
+	Accrual     int         `db:"accrual"`
+	UpdateAt    time.Time   `db:"update_at"`
 }

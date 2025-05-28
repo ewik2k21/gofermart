@@ -13,6 +13,7 @@ type IUserRepository interface {
 	CreateUserAccount(request *interfaces.UserRequest, id uuid.UUID, ctx context.Context) error
 	GetUserByLogin(login string) (*interfaces.UserLoginData, error)
 	AddOrder(userId, orderNumber string) (string, error)
+	GetAllOrders(userId string) (*[]models.Order, error)
 }
 
 type UserRepository struct {
@@ -72,4 +73,37 @@ func (r *UserRepository) AddOrder(userId, orderNumber string) (string, error) {
 		return "", err
 	}
 	return id.String(), nil
+}
+
+func (r *UserRepository) GetAllOrders(userId string) (*[]models.Order, error) {
+	orders := &[]models.Order{}
+
+	sqlQuery := `
+	select order_number,status,update_at, accrual 
+	from orders
+	where user_id = $1 
+	order by update_at`
+
+	rows, err := r.db.Query(sqlQuery, userId)
+	if err != nil {
+		logrus.Errorf("failed get all orders : %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var order models.Order
+		err = rows.Scan(&order.OrderNumber, &order.Status, &order.UpdateAt, &order.Accrual)
+		if err != nil {
+			logrus.Errorf("failed scan row: %v", err)
+			return nil, err
+		}
+		*orders = append(*orders, order)
+	}
+	if err := rows.Err(); err != nil {
+		logrus.Errorf("failed iteration on rows: %v", err)
+		return nil, err
+	}
+
+	return orders, nil
 }

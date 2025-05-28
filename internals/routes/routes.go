@@ -19,6 +19,7 @@ func RegisterUserRoutes(server server.IGinServer, userHandler *handlers.UserHand
 
 	server.RegisterGroupRoute("api/v1", []interfaces.RouteDefinition{
 		{Method: "POST", Path: "/user/orders", Handler: userHandler.AddOrder},
+		{Method: "GET", Path: "/user/orders", Handler: userHandler.GetAllOrders},
 	}, func(ctx *gin.Context) {
 		logrus.Infof("Request on %s", ctx.Request.URL.Path)
 	}, middleware.AuthMiddleware())

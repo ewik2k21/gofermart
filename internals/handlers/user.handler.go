@@ -171,6 +171,34 @@ func (h *UserHandler) AddOrder(c *gin.Context) {
 	})
 }
 
+func (h *UserHandler) GetAllOrders(c *gin.Context) {
+	userId, ok := utils.GetId(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Wrong user id",
+			Code:    http.StatusUnauthorized,
+		})
+	}
+
+	orders, err := h.userService.GetAllOrders(userId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+	if len(*orders) == 0 {
+		c.JSON(http.StatusNoContent, interfaces.Response{
+			Message: "No data to answer",
+			Code:    http.StatusNoContent,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, orders)
+}
+
 //func (h *UserHandler) GetId(c *gin.Context) {
 //	userId, exists := c.Get("user_id")
 //	if !exists {
