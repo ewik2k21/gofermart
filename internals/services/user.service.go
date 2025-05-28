@@ -14,6 +14,7 @@ type IUserService interface {
 	CheckCredentials(userRequest *interfaces.UserRequest) (string, bool, error)
 	AddOrder(userId, orderNumber string) (int, string, error)
 	GetAllOrders(userId string) (*[]interfaces.OrderResponse, error)
+	GetBalance(userId string) (*interfaces.BalanceResponse, error)
 }
 
 type UserService struct {
@@ -88,4 +89,13 @@ func (s *UserService) GetAllOrders(userId string) (*[]interfaces.OrderResponse, 
 		})
 	}
 	return &ordersResp, nil
+}
+
+func (s *UserService) GetBalance(userId string) (*interfaces.BalanceResponse, error) {
+	balance, err := s.userRepo.GetBalance(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &interfaces.BalanceResponse{Current: balance.Current, Withdrawn: balance.Withdraw}, nil
 }

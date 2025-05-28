@@ -14,6 +14,7 @@ type IUserRepository interface {
 	GetUserByLogin(login string) (*interfaces.UserLoginData, error)
 	AddOrder(userId, orderNumber string) (string, error)
 	GetAllOrders(userId string) (*[]models.Order, error)
+	GetBalance(userId string) (*models.Balance, error)
 }
 
 type UserRepository struct {
@@ -106,4 +107,21 @@ func (r *UserRepository) GetAllOrders(userId string) (*[]models.Order, error) {
 	}
 
 	return orders, nil
+}
+
+func (r *UserRepository) GetBalance(userId string) (*models.Balance, error) {
+	balance := &models.Balance{}
+
+	sqlQuery := `
+	select b.current, b.withdraw
+	from balances as b 
+	where user_id = $1`
+
+	err := r.db.QueryRow(sqlQuery, userId).Scan(&balance.Current, &balance.Withdraw)
+	if err != nil {
+		logrus.Errorf("failed get balance : %v", err)
+		return nil, err
+	}
+
+	return balance, nil
 }

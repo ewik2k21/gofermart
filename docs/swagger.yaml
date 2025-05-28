@@ -1,0 +1,328 @@
+basePath: /api/v1
+definitions:
+  interfaces.OrderRequest:
+    properties:
+      order_number:
+        type: string
+    required:
+    - order_number
+    type: object
+  interfaces.Response:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  interfaces.UserRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  models.Order:
+    properties:
+      accrual:
+        type: integer
+      id:
+        type: string
+      orderNumber:
+        type: string
+      status:
+        $ref: '#/definitions/models.OrderStatus'
+      updateAt:
+        type: string
+      userID:
+        type: string
+    type: object
+  models.OrderStatus:
+    enum:
+    - PROCESSING
+    - PROCESSED
+    - INVALID
+    - NEW
+    type: string
+    x-enum-varnames:
+    - OrderStatusProcessing
+    - OrderStatusProcessed
+    - OrderStatusInvalid
+    - OrderStatusNew
+host: localhost:8080
+info:
+  contact: {}
+  description: API server for gofermart
+  title: gofermartAPI
+  version: "1.0"
+paths:
+  /user/balance:
+    get:
+      description: Retrieves the current balance for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved balance
+          schema:
+            type: number
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Gets the user's balance
+      tags:
+      - users
+      - balance
+  /user/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a JWT token.
+      parameters:
+      - description: User credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/interfaces.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User successfully logged in
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+      summary: Logs in a user
+      tags:
+      - users
+  /user/orders:
+    get:
+      description: Retrieves a list of all orders associated with the authenticated
+        user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved orders
+          schema:
+            items:
+              $ref: '#/definitions/models.Order'
+            type: array
+        "204":
+          description: No Content
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Gets all orders for the user
+      tags:
+      - users
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Adds a new order to the user's account based on the provided order
+        number.
+      parameters:
+      - description: Order details
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/interfaces.OrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully added order
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "202":
+          description: Order accepted for processing
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                Message:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Adds a new order for the user
+      tags:
+      - users
+      - orders
+  /user/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user account and generates a JWT token.
+      parameters:
+      - description: User registration details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/interfaces.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful registration
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                ' Message':
+                  type: string
+                Code:
+                  type: integer
+              type: object
+        "400":
+          description: Invalid request or validation error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                ' Message':
+                  type: string
+                Code:
+                  type: integer
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                ' Message':
+                  type: string
+                Code:
+                  type: integer
+              type: object
+      summary: Register a new user
+      tags:
+      - users
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

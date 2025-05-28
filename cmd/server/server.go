@@ -28,7 +28,7 @@ type ginServer struct {
 
 func NewGinServer(ctx context.Context, httpAddress string) (IGinServer, error) {
 	engine := gin.Default()
-	//engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	gs := &ginServer{
 		engine:   engine,
 		server:   &http.Server{Addr: httpAddress, Handler: engine},

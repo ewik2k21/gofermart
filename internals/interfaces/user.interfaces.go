@@ -33,3 +33,8 @@ type OrderResponse struct {
 	Accrual     int                `json:"accrual,omitempty"`
 	UpdatedAt   time.Time          `json:"updated_at,omitempty"`
 }
+
+type BalanceResponse struct {
+	Current   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
+}

@@ -20,6 +20,17 @@ func NewUserHandler(userService services.IUserService, tokenService services.ITo
 	return &UserHandler{userService: userService, tokenService: tokenService, validate: validator.New()}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Registers a new user account and generates a JWT token.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body interfaces.UserRequest true "User registration details"
+// @Success 200 {object} interfaces.Response{Code=int, Message=string} "Successful registration"
+// @Failure 400 {object} interfaces.Response{Code=int, Message=string} "Invalid request or validation error"
+// @Failure 500 {object} interfaces.Response{Code=int, Message=string} "Internal server error"
+// @Router /user/register [post]
 func (h *UserHandler) Register(c *gin.Context) {
 	var userRequest interfaces.UserRequest
 
@@ -68,6 +79,18 @@ func (h *UserHandler) Register(c *gin.Context) {
 	})
 }
 
+// Login godoc
+// @Summary Logs in a user
+// @Description Authenticates a user and returns a JWT token.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body interfaces.UserRequest true "User credentials"
+// @Success 200 {object} interfaces.Response{Message=string} "User successfully logged in"
+// @Failure 400 {object} interfaces.Response{Message=string} "Bad Request"
+// @Failure 401 {object} interfaces.Response{Message=string} "Unauthorized"
+// @Failure 500 {object} interfaces.Response{Message=string} "Internal Server Error"
+// @Router /user/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
 	var userRequest interfaces.UserRequest
 
@@ -124,6 +147,21 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 }
 
+// AddOrder godoc
+// @Summary Adds a new order for the user
+// @Description Adds a new order to the user's account based on the provided order number.
+// @Tags users, orders
+// @Accept json
+// @Produce json
+// @Param order body interfaces.OrderRequest true "Order details"
+// @Security ApiKeyAuth
+// @Success 200 {object} interfaces.Response{Message=string} "Successfully added order"
+// @Success 202 {object} interfaces.Response{Message=string} "Order accepted for processing"
+// @Failure 400 {object} interfaces.Response{Message=string} "Bad Request"
+// @Failure 401 {object} interfaces.Response{Message=string} "Unauthorized"
+// @Failure 422 {object} interfaces.Response{Message=string} "Unprocessable Entity"
+// @Failure 500 {object} interfaces.Response{Message=string} "Internal Server Error"
+// @Router /user/orders [post]
 func (h *UserHandler) AddOrder(c *gin.Context) {
 	var orderRequest interfaces.OrderRequest
 
@@ -171,6 +209,17 @@ func (h *UserHandler) AddOrder(c *gin.Context) {
 	})
 }
 
+// GetAllOrders godoc
+// @Summary Gets all orders for the user
+// @Description Retrieves a list of all orders associated with the authenticated user.
+// @Tags users, orders
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {array} models.Order "Successfully retrieved orders"
+// @Failure 204 {object} interfaces.Response{Message=string} "No Content"
+// @Failure 401 {object} interfaces.Response{Message=string} "Unauthorized"
+// @Failure 500 {object} interfaces.Response{Message=string} "Internal Server Error"
+// @Router /user/orders [get]
 func (h *UserHandler) GetAllOrders(c *gin.Context) {
 	userId, ok := utils.GetId(c)
 	if !ok {
@@ -199,12 +248,33 @@ func (h *UserHandler) GetAllOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, orders)
 }
 
-//func (h *UserHandler) GetId(c *gin.Context) {
-//	userId, exists := c.Get("user_id")
-//	if !exists {
-//		c.JSON(400, "FAILED ID ")
-//		return
-//	}
-//	userIdString, _ := userId.(string)
-//	c.JSON(200, "user id : "+userIdString)
-//}
+// GetBalance godoc
+// @Summary Gets the user's balance
+// @Description Retrieves the current balance for the authenticated user.
+// @Tags users, balance
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {number} float64 "Successfully retrieved balance"
+// @Failure 401 {object} interfaces.Response{Message=string} "Unauthorized"
+// @Failure 500 {object} interfaces.Response{Message=string} "Internal Server Error"
+// @Router /user/balance [get]
+func (h *UserHandler) GetBalance(c *gin.Context) {
+	userId, ok := utils.GetId(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Wrong user id",
+			Code:    http.StatusUnauthorized,
+		})
+	}
+
+	balance, err := h.userService.GetBalance(userId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: "Failed get balance",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, balance)
+}
