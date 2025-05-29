@@ -22,14 +22,14 @@ func SetUpDatabase(ctx context.Context) (*sql.DB, error) {
 	if err != nil {
 		logrus.Fatalf("Failed to connect to database: %v", err)
 	}
-
-	if err := goose.Up(db, "migrations"); err != nil {
-		logrus.Fatalf("Failed migrations for init db : %v", err)
-	}
-
 	err = db.Ping()
 	if err != nil {
 		logrus.Fatalf("Failed to ping db: %v", err)
+	}
+
+	//migrations up for db
+	if err := goose.Up(db, "migrations"); err != nil {
+		logrus.Fatalf("Failed migrations for init db : %v", err)
 	}
 
 	return db, nil

@@ -59,7 +59,7 @@ func (gs *ginServer) Start(ctx context.Context) error {
 	case err := <-gs.startErr:
 		return err
 	case <-quit:
-		logrus.Info("shutting down server...")
+		logrus.Info("Shutting down server...")
 		return gs.server.Shutdown(ctx)
 
 	case <-ctx.Done():
@@ -75,7 +75,7 @@ func (gs *ginServer) ShutDown(ctx context.Context) error {
 	defer cancel()
 
 	if err := gs.server.Shutdown(ctxShutDown); err != nil {
-		logrus.Errorf("server shutdown faailed : %v", err)
+		logrus.Errorf("Server shutdown faailed : %v", err)
 		return err
 	}
 

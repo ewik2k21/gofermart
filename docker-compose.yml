@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+
+  go-app:
+    container_name: gofermart
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      go_db:
+        condition: service_healthy
+
+  go_db:
+    image: postgres:16-alpine
+    container_name: gofermartDataBase
+    environment:
+      POSTGRES_USER: ewik2k
+      POSTGRES_PASSWORD: zaxsaqswq1w2
+      POSTGRES_DB: gofermartDb
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ewik2k -d gofermartDb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+
+volumes:
+  pgdata:
+    driver: local
