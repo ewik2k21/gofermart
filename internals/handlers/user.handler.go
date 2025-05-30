@@ -20,6 +20,39 @@ func NewUserHandler(userService services.IUserService, tokenService services.ITo
 	return &UserHandler{userService: userService, tokenService: tokenService, validate: validator.New()}
 }
 
+// FillDb
+// @Summary Заполняет базу данных случайными пользователями
+// @Description Заполняет таблицу users в базе данных указанным количеством случайных пользователей.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param count body int true "Количество пользователей для добавления"
+// @Success 200 {string} string "Successfully fill db"
+// @Failure 400 {object} interfaces.Response "Invalid request"
+// @Failure 500 {object} interfaces.Response "Internal Server Error"
+// @Router /user/filldb [post]
+func (h *UserHandler) FillDb(c *gin.Context) {
+	var count int
+	if err := c.ShouldBindJSON(&count); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	err := h.userService.FillDb(count, c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, "Successfully fill db")
+
+}
+
 // Register godoc
 // @Summary Register a new user
 // @Description Registers a new user account and generates a JWT token.
@@ -193,6 +226,7 @@ func (h *UserHandler) AddOrder(c *gin.Context) {
 			Message: "Wrong user id",
 			Code:    http.StatusUnauthorized,
 		})
+		return
 	}
 	statusCode, message, err := h.userService.AddOrder(userId, orderRequest.OrderNumber)
 	if err != nil {
@@ -215,7 +249,7 @@ func (h *UserHandler) AddOrder(c *gin.Context) {
 // @Tags users, orders
 // @Produce json
 // @Security ApiKeyAuth
-// @Success 200 {array} models.Order "Successfully retrieved orders"
+// @Success 200 {array} interfaces.OrderResponse "Successfully retrieved orders"
 // @Failure 204 {object} interfaces.Response{Message=string} "No Content"
 // @Failure 401 {object} interfaces.Response{Message=string} "Unauthorized"
 // @Failure 500 {object} interfaces.Response{Message=string} "Internal Server Error"
@@ -227,6 +261,7 @@ func (h *UserHandler) GetAllOrders(c *gin.Context) {
 			Message: "Wrong user id",
 			Code:    http.StatusUnauthorized,
 		})
+		return
 	}
 
 	orders, err := h.userService.GetAllOrders(userId)
@@ -277,4 +312,105 @@ func (h *UserHandler) GetBalance(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, balance)
+}
+
+// GetWithdraws godoc
+// @Summary Get user withdraws
+// @Description Retrieves all withdraws for a specific user
+// @Tags User
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {array} interfaces.WithdrawsResponse "Successfully retrieved withdraws"
+// @Failure 401 {object} interfaces.Response{code=int,message=string} "Unauthorized (Wrong user ID)"
+// @Failure 204 {object} interfaces.Response{code=int,message=string} "No Content (No withdraws found)"
+// @Failure 500 {object} interfaces.Response{code=int,message=string} "Internal Server Error"
+// @Router /user/withdraws [get]
+func (h *UserHandler) GetWithdraws(c *gin.Context) {
+	userId, ok := utils.GetId(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Wrong user id",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	withdraws, err := h.userService.GetWithdrawsById(userId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+	}
+
+	if len(*withdraws) == 0 {
+		c.JSON(http.StatusNoContent, interfaces.Response{
+			Message: "No withdraws",
+			Code:    http.StatusNoContent,
+		})
+	}
+
+	c.JSON(http.StatusOK, withdraws)
+}
+
+// PostWithdraw godoc
+// @Summary Post a withdraw request
+// @Description Endpoint to submit a withdraw request
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param request body interfaces.WithdrawRequest true "Withdraw Request"
+// @Security ApiKeyAuth
+// @Success 200 {object} interfaces.Response{code=int,message=string} "Success"
+// @Failure 400 {object} interfaces.Response{code=int,message=string} "Bad Request (Invalid JSON, validation errors)"
+// @Failure 422 {object} interfaces.Response{code=int,message=string} "Unprocessable Entity (Incorrect order number format)"
+// @Failure 401 {object} interfaces.Response{code=int,message=string} "Unauthorized (Wrong user ID)"
+// @Failure 500 {object} interfaces.Response{code=int,message=string} "Internal Server Error"
+// @Router /user/balance/withdraw [post]
+func (h *UserHandler) PostWithdraw(c *gin.Context) {
+	var withdrawRequest interfaces.WithdrawRequest
+
+	if err := c.ShouldBindJSON(&withdrawRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	if err := h.validate.Struct(withdrawRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfaces.Response{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+		return
+	}
+	if ok := utils.ValidateOrderNumber(withdrawRequest.Order); !ok {
+		c.JSON(http.StatusUnprocessableEntity, interfaces.Response{
+			Code:    http.StatusUnprocessableEntity,
+			Message: "Incorrect order number format ",
+		})
+		return
+	}
+
+	userId, ok := utils.GetId(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, interfaces.Response{
+			Message: "Wrong user id",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	statusCode, msg, err := h.userService.PostWithdraw(userId, withdrawRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfaces.Response{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(statusCode, interfaces.Response{Message: msg, Code: statusCode})
 }

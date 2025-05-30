@@ -16,6 +16,7 @@ func RegisterUserRoutes(server server.IGinServer, userHandler *handlers.UserHand
 		{Method: "GET", Path: "/swagger/*any", Handler: ginSwagger.WrapHandler(swaggerFiles.Handler)},
 		{Method: "POST", Path: "/user/register", Handler: userHandler.Register},
 		{Method: "POST", Path: "/user/login", Handler: userHandler.Login},
+		{Method: "POST", Path: "/user/filldb", Handler: userHandler.FillDb},
 	}, func(ctx *gin.Context) {
 		logrus.Infof("Request on %s", ctx.Request.URL.Path)
 	})
@@ -24,6 +25,8 @@ func RegisterUserRoutes(server server.IGinServer, userHandler *handlers.UserHand
 		{Method: "POST", Path: "/user/orders", Handler: userHandler.AddOrder},
 		{Method: "GET", Path: "/user/orders", Handler: userHandler.GetAllOrders},
 		{Method: "GET", Path: "/user/balance", Handler: userHandler.GetBalance},
+		{Method: "POST", Path: "/user/balance/withdraw", Handler: userHandler.PostWithdraw},
+		{Method: "GET", Path: "/user/withdraws", Handler: userHandler.GetWithdraws},
 	}, func(ctx *gin.Context) {
 		logrus.Infof("Request on %s", ctx.Request.URL.Path)
 	}, middleware.AuthMiddleware())

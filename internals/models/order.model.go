@@ -22,3 +22,9 @@ type Order struct {
 	Accrual     int         `db:"accrual"`
 	UpdateAt    time.Time   `db:"update_at"`
 }
+
+type Withdraw struct {
+	Order       string    `db:"order"`
+	Sum         int       `db:"sum"`
+	ProcessedAt time.Time `db:"processed_at"`
+}

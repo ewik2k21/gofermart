@@ -7,6 +7,17 @@ definitions:
     required:
     - order_number
     type: object
+  interfaces.OrderResponse:
+    properties:
+      accrual:
+        type: integer
+      number:
+        type: string
+      status:
+        $ref: '#/definitions/models.OrderStatus'
+      updated_at:
+        type: string
+    type: object
   interfaces.Response:
     properties:
       code:
@@ -24,20 +35,21 @@ definitions:
     - login
     - password
     type: object
-  models.Order:
+  interfaces.WithdrawRequest:
     properties:
-      accrual:
+      order:
+        type: string
+      sum:
         type: integer
-      id:
+    type: object
+  interfaces.WithdrawsResponse:
+    properties:
+      order:
         type: string
-      orderNumber:
+      processed_at:
         type: string
-      status:
-        $ref: '#/definitions/models.OrderStatus'
-      updateAt:
-        type: string
-      userID:
-        type: string
+      sum:
+        type: integer
     type: object
   models.OrderStatus:
     enum:
@@ -92,6 +104,112 @@ paths:
       tags:
       - users
       - balance
+  /user/balance/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Endpoint to submit a withdraw request
+      parameters:
+      - description: Withdraw Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/interfaces.WithdrawRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request (Invalid JSON, validation errors)
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized (Wrong user ID)
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "422":
+          description: Unprocessable Entity (Incorrect order number format)
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Post a withdraw request
+      tags:
+      - User
+  /user/filldb:
+    post:
+      consumes:
+      - application/json
+      description: Заполняет таблицу users в базе данных указанным количеством случайных
+        пользователей.
+      parameters:
+      - description: Количество пользователей для добавления
+        in: body
+        name: count
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully fill db
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/interfaces.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/interfaces.Response'
+      summary: Заполняет базу данных случайными пользователями
+      tags:
+      - users
   /user/login:
     post:
       consumes:
@@ -157,7 +275,7 @@ paths:
           description: Successfully retrieved orders
           schema:
             items:
-              $ref: '#/definitions/models.Order'
+              $ref: '#/definitions/interfaces.OrderResponse'
             type: array
         "204":
           description: No Content
@@ -318,6 +436,58 @@ paths:
       summary: Register a new user
       tags:
       - users
+  /user/withdraws:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all withdraws for a specific user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved withdraws
+          schema:
+            items:
+              $ref: '#/definitions/interfaces.WithdrawsResponse'
+            type: array
+        "204":
+          description: No Content (No withdraws found)
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized (Wrong user ID)
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/interfaces.Response'
+            - properties:
+                code:
+                  type: integer
+                message:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get user withdraws
+      tags:
+      - User
 schemes:
 - http
 securityDefinitions:

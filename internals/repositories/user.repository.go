@@ -15,6 +15,10 @@ type IUserRepository interface {
 	AddOrder(userId, orderNumber string) (string, error)
 	GetAllOrders(userId string) (*[]models.Order, error)
 	GetBalance(userId string) (*models.Balance, error)
+	FillBalance(userId uuid.UUID, current float64, withdraw int) error
+	GetOrderByNumberAndUserId(userId string, order string) (string, error)
+	AddWithdraw(userId string, withdrawRequest interfaces.WithdrawRequest) error
+	GetWithdrawById(userId string) (*[]models.Withdraw, error)
 }
 
 type UserRepository struct {
@@ -23,6 +27,54 @@ type UserRepository struct {
 
 func NewUserRepository(db *sql.DB) IUserRepository {
 	return &UserRepository{db: db}
+}
+
+func (r *UserRepository) AddWithdraw(userId string, withdrawRequest interfaces.WithdrawRequest) error {
+	updateOrderQuery := `UPDATE orders SET status = $1 WHERE order_number = $2`
+	updateBalanceQuery := `UPDATE balances SET "current" = "current" - $1 WHERE user_id = $2 `
+	insertQuery := `INSERT INTO withdraws(id,user_id, "order", sum) VALUES ($1,$2,$3,$4)`
+	id, _ := uuid.NewV4()
+	_, err := r.db.Exec(insertQuery, id, userId, withdrawRequest.Order, withdrawRequest.Sum)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(updateOrderQuery, models.OrderStatusProcessing, withdrawRequest.Order)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(updateBalanceQuery, float64(withdrawRequest.Sum), userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *UserRepository) GetOrderByNumberAndUserId(userId string, order string) (string, error) {
+	sqlQuery := `SELECT order_number FROM orders WHERE user_id = $1 and order_number = $2`
+
+	var orderNumber string
+
+	err := r.db.QueryRow(sqlQuery, userId, order).Scan(&orderNumber)
+	if err != nil && err == sql.ErrNoRows {
+		return "", err
+	}
+	return orderNumber, nil
+
+}
+
+func (r *UserRepository) FillBalance(userId uuid.UUID, current float64, withdraw int) error {
+	sqlQuery := `INSERT INTO balances (user_id, current, withdraw)
+	VALUES ($1, $2, $3) `
+
+	_, err := r.db.Exec(sqlQuery, userId, current, withdraw)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 func (r *UserRepository) CreateUserAccount(request *interfaces.UserRequest, id uuid.UUID, ctx context.Context) error {
@@ -74,6 +126,39 @@ func (r *UserRepository) AddOrder(userId, orderNumber string) (string, error) {
 		return "", err
 	}
 	return id.String(), nil
+}
+
+func (r *UserRepository) GetWithdrawById(userId string) (*[]models.Withdraw, error) {
+	withdraws := &[]models.Withdraw{}
+
+	sqlQuery := `
+	select  "order", sum, processed_at 
+	from withdraws
+	where user_id = $1
+	order by processed_at`
+
+	rows, err := r.db.Query(sqlQuery, userId)
+	if err != nil && err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var withdraw models.Withdraw
+		err = rows.Scan(&withdraw.Order, &withdraw.Sum, &withdraw.ProcessedAt)
+		if err != nil {
+			return nil, err
+		}
+		*withdraws = append(*withdraws, withdraw)
+	}
+	if err := rows.Err(); err != nil {
+		logrus.Errorf("failed iteration on rows: %v", err)
+		return nil, err
+	}
+
+	return withdraws, nil
+
 }
 
 func (r *UserRepository) GetAllOrders(userId string) (*[]models.Order, error) {

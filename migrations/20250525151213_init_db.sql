@@ -1,10 +1,12 @@
 -- +goose Up
--- +goose StatementBegin
+-- +goose StatementBegins
 CREATE TABLE users (
                        id uuid PRIMARY KEY ,
                        login VARCHAR(255) NOT NULL UNIQUE ,
                        password_hash VARCHAR(255)
 );
+
+
 
 CREATE TABLE balances (
     user_id uuid PRIMARY KEY REFERENCES users(id),
